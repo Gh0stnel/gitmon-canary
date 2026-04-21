@@ -1,0 +1,31 @@
+name: Daily canary commit
+
+on:
+  schedule:
+    - cron: "30 4 * * *"  # 04:30 UTC — 30 min before canary-analytics cron
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Make a commit
+        run: |
+          set -euo pipefail
+          git config user.name  "GitMon Canary"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+          mkdir -p daily-commits
+          DAY=$(date -u +%F)
+          echo "$(date -u --iso-8601=seconds)" >> "daily-commits/${DAY}.log"
+
+          git add daily-commits
+          git diff --cached --quiet || git commit -m "canary: ${DAY}"
+          git push
